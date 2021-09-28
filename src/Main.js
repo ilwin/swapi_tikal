@@ -3,6 +3,7 @@ import axios from "axios";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog } from '@fortawesome/free-solid-svg-icons';
 import Table from 'react-bootstrap/Table';
+import {ProgressBar} from 'react-bootstrap';
 
 class Main extends React.Component {
     constructor(props) {
@@ -16,6 +17,8 @@ class Main extends React.Component {
             regexHasId: "/\d+/",
             counter: 0,
             isCalculating: true,
+            barChartIsReady: false,
+            chartsHtml: '',
             swApis: {
                 people: 'https://swapi.dev/api/people',
                 vehicles: 'https://swapi.dev/api/vehicles',
@@ -29,6 +32,7 @@ class Main extends React.Component {
         };
         this.getSwApi = this.getSwApi.bind(this);
         this.findMostPopulatedByPilots = this.findMostPopulatedByPilots.bind(this);
+        this.showBarCharts = this.showBarCharts.bind(this);
     }
 
     getSwApi(apiName, link, data) {
@@ -96,6 +100,31 @@ class Main extends React.Component {
         );
     }
 
+    showBarCharts() {
+        let { planets } = this.state;
+        let maxValue = 0;
+        let maxWidth = 100; //percent
+        let chartsHtml = [];
+        for(const key in planets) {
+            let population = !isNaN(parseInt(planets[key].population)) ? parseInt(planets[key].population) : 0;
+            planets[key].population = !isNaN(parseInt(planets[key].population)) ? parseInt(planets[key].population) : 0;
+            if(population >= maxValue) {
+                maxValue = population;
+            }
+        }
+
+        for(const key in planets) {
+            chartsHtml.push(
+                <tr>
+                    <td>{planets[key].name} ({planets[key].population})</td>
+                    <td style={{width: '100%'}}><ProgressBar now={planets[key].population * maxWidth/maxValue} /></td>
+                </tr>
+                )
+        }
+        this.setState({chartsHtml, barChartIsReady: true})
+
+    }
+
     componentDidMount() {
         //Fetch API data
         this.getSwApi('people', this.state.swApis["people"], []);
@@ -116,9 +145,12 @@ class Main extends React.Component {
                     .then(() => {
                         setTimeout(() => {
                             this.setState({isCalculating: false});
-                        }, 3000)
+                        }, 30)
                         }
-                    );
+                    )
+                    .then(() => {
+                        this.showBarCharts();
+                    });
             }
         }, 200);
 
@@ -126,7 +158,7 @@ class Main extends React.Component {
     }
 
     render() {
-        const { error, isLoaded, swApisStatus, isCalculating, winner} = this.state;
+        const { error, isLoaded, swApisStatus, isCalculating, winner, chartsHtml, barChartIsReady} = this.state;
         if (error) {
             return <div>Error: {error.message}</div>;;
         } else {
@@ -145,7 +177,7 @@ class Main extends React.Component {
                     }
                     {isLoaded && !isCalculating && (
 
-                        <Table striped bordered hover size="sm" responsive >
+                        <Table striped bordered hover size="sm" responsive className='mb-3 bg-light' >
                             <tbody>
                                 <tr>
                                     <td>Vehicle name with the largest sum</td>
@@ -164,6 +196,7 @@ class Main extends React.Component {
                         </Table>
 
                        )}
+                    {barChartIsReady && <Table striped bordered hover responsive ><tbody>{chartsHtml}</tbody></Table>}
                 </section>
             );
         }
