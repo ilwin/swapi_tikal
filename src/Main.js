@@ -17,9 +17,14 @@ class Main extends React.Component {
                 vehicles: 'https://swapi.dev/api/vehicles',
                 planets:  'https://swapi.dev/api/planets'
             },
-
+            swApisStatus: {
+                people: false,
+                vehicles: false,
+                planets:  false
+            },
         };
         this.getSwApi = this.getSwApi.bind(this);
+        this.findMostPopulatedByPilots = this.findMostPopulatedByPilots.bind(this);
     }
 
     getSwApi(apiName, link, data) {
@@ -27,13 +32,15 @@ class Main extends React.Component {
             .then(
                 (res) => {
                     data = Array.isArray(res.data.results) ? data.concat(res.data.results) : data;
-                    if(res.data.next !== null ){
+                    if (res.data.next !== null) {
                         this.getSwApi(apiName, res.data.next, data)
-                    }
-                    else {
+                    } else {
                         this.setState({
-                            [apiName]: data
-                        }, ()=> {console.log("FINAL:", apiName,  this.state[apiName]);})
+                            [apiName]: data,
+                            swApisStatus: { ...this.state.swApisStatus, [apiName] : true},
+                        }, () => {
+                            console.log(apiName, "data:", this.state[apiName]);
+                        })
                     }
                 },
                 (error) => {
@@ -44,51 +51,37 @@ class Main extends React.Component {
             );
     }
 
+    /*
+    Find Which vehicle names have the highest sum of population for all its pilots’ home planets
+     */
+    findMostPopulatedByPilots() {
+        return new Promise((resolve, reject) => {
+            console.log("inside");
+            setTimeout(() => { resolve()}, 10000);
+            }
+        );
+    }
+
     componentDidMount() {
+        this.getSwApi('people', this.state.swApis["people"], []);
+        this.getSwApi('vehicles', this.state.swApis["vehicles"], []);
+        this.getSwApi('planets', this.state.swApis["planets"], []);
 
-        // let people = this.getSwApi('people', this.state.swApis["people"], []);
-        // let vehicles = this.getSwApi('vehicles', this.state.swApis["vehicles"], []);
-        // let planets = this.getSwApi('planets', this.state.swApis["planets"], []);
-        console.log(axios.get('https://swapi.dev/api/planets').then((res) => {console.log(res); console.log("1")}));
-
-
-        Promise.all([
-            axios.get('https://swapi.dev/api/planets').then((res) => {console.log(res); console.log("1")}),
-            axios.get('https://swapi.dev/api/planets'),
-            axios.get('https://swapi.dev/api/planets')
-        ])
-            .then(axios.spread((people, vehicles,planets) => {
-                console.log("spread");
-                console.log(people, vehicles, planets);
-                this.setState({
-                    isLoaded: true
-                })
-
-                for (let vehicleId in vehicles) {
-                    if(vehicles[vehicleId]["pilots"] !== undefined && vehicles[vehicleId]["pilots"].length !== 0) {
-                        for(let pilotId in vehicles[vehicleId]["pilots"]){
-                            let pilotLink = vehicles[vehicleId]["pilots"][pilotId];
-                            let pIdArr = pilotLink.match(this.state.regexHasId);
-                            // if(Array.isArray(pIdArr) && pIdArr[0] !== undefined){
-                            //     let pilot = people.find(p)
-                            // }
+        //Instead of Premise.all which one didn't succeed to use because of multiple pages of API data
+        //Check periodically is data ready
+        const interval = setInterval(() => {
+            if(this.state.swApisStatus['people']
+                && this.state.swApisStatus['vehicles']
+                && this.state.swApisStatus['planets'])
+            {
+                clearInterval(interval);
+                //Start Calculations
+                this.findMostPopulatedByPilots()
+                    .then(() => console.log("counter"));
+            }
+        }, 200);
 
 
-                            console.log("vehicleId:", vehicleId, "pilotLink", pilotLink);
-                            }
-                        }
-                    }
-                    // console.log(key);
-                    // console.log(vehicles[key]["pilots"]);
-            },
-
-                (error) => {
-                    this.setState({
-                        isLoaded: true,
-                        error
-                    });
-                }
-            ));
     }
 
     render() {
