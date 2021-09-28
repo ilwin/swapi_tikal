@@ -145,7 +145,7 @@ class Main extends React.Component {
                     .then(() => {
                         setTimeout(() => {
                             this.setState({isCalculating: false});
-                        }, 30)
+                        }, 3000)
                         }
                     )
                     .then(() => {
